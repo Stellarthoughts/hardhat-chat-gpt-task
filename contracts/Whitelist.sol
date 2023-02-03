@@ -12,7 +12,7 @@ contract Whitelist is Ownable {
 
     modifier onlyWhitelisted() {
         require(
-            whitelisted[msg.sender] == true,
+            whitelisted[msg.sender],
             "You should be whitelisted to call this function"
         );
         _;

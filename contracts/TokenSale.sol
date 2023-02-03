@@ -9,10 +9,10 @@ import "./Whitelist.sol";
 /// @author Stellarthoughts
 /// @notice In this offering tokens are not bought outright, but instead distributed after the sale ends
 contract TokenSale is Whitelist {
-    uint public timeStart;
-    uint public timeEnd;
-    uint public tokenPrice;
-    uint public tokenSupply;
+    uint public immutable timeStart;
+    uint public immutable timeEnd;
+    uint public immutable tokenPrice;
+    uint public immutable tokenSupply;
 
     // A variable to keep track of ethers invested
     // Used for checking if there are enough tokens in supply for investor to pay ethers
@@ -33,7 +33,9 @@ contract TokenSale is Whitelist {
     /// @param _timeStart The start of the sale (Unix)
     /// @param _timeEnd The end of the sale (Unix)
     /// @param _tokenSupply The number of tokens avaliable to be distributed
-    /// @param _tokenPrice The fixed price of the token in ETH
+    /// @param _tokenPrice The fixed price of the token in gwei
+    // slither warns me about block.timestamp comparisons, but i think it's safe here
+    // it's also unknown to me yet if block.timestamp vulnerability applies to PoS as opposed to PoW
     constructor(
         uint _timeStart,
         uint _timeEnd,
@@ -107,7 +109,13 @@ contract TokenSale is Whitelist {
     /// Distributes tokens among investors based on tokenPrice and amount of Ethers invested.
     // Returns unused ethers to investor.
     // Probably could do without keeping track of investors ethers at this point, but i still included this.
-    function distributeTokens() external onlyOwner {
+    // for laughs will include the slither warnings and comment out the version
+    // of the function which triggered it
+    /* 
+	TokenSale.distributeTokens() (contracts/TokenSale.sol#110-122) has external calls inside a loop: address(investor).transfer(amountEthers % tokenPrice) (contracts/TokenSale.sol#117)
+	Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+	*/
+    /* function distributeTokens() external onlyOwner {
         require(saleEnded);
         for (uint i = 0; i < investors.length; i++) {
             address investor = investors[i];
@@ -119,12 +127,32 @@ contract TokenSale is Whitelist {
             ownerToEthers[investor] = 0;
         }
         _burnTokens(owner);
+    } */
+    // Shifted the responsibility of withdrawing ethers to users of this contract, withdrawEtheres function
+    function distributeTokens() external onlyOwner {
+        require(saleEnded);
+        for (uint i = 0; i < investors.length; i++) {
+            address investor = investors[i];
+            uint amountEthers = ownerToEthers[investor];
+            _transferTokens(owner, msg.sender, amountEthers / tokenPrice);
+            ownerToEthers[investor] = amountEthers % tokenPrice;
+        }
+        _burnTokens(owner);
     }
 
     /// Widthdraws ethers to owner account
-    function withdrawEthers() external onlyOwner {
+    function withdrawEthersFromContract() external onlyOwner {
         require(saleEnded);
         payable(owner).transfer(address(this).balance);
+    }
+
+    /// Widthdraws remaining ethers to investor
+    // reentrancy bug spotted here by slither and fixed
+    function withdrawEthers() external {
+        require(saleEnded);
+        require(ownerToEthers[msg.sender] > 0);
+        ownerToEthers[msg.sender] = 0;
+        payable(msg.sender).transfer(ownerToEthers[msg.sender]);
     }
 
     /// Burns the token of given address
