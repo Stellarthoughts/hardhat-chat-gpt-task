@@ -114,8 +114,8 @@ contract TokenSale is Whitelist {
     /** 
 			TokenSale.distributeTokens() (contracts/TokenSale.sol#110-122) has external calls inside a loop: address/(investor).transfer(amountEthers % tokenPrice) (contracts/TokenSale.sol#117)
 			Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
-			*/
-    /* function distributeTokens() external onlyOwner {
+	
+    		function distributeTokens() external onlyOwner {
 				require(saleEnded);
 				for (uint i = 0; i < investors.length; i++) {
 					address investor = investors[i];
