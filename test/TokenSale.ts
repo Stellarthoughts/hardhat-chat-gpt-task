@@ -12,7 +12,7 @@ describe("TokenSale", function () {
 		return 30 * 24 * 60 * 60
 	}
 
-	async function deployContractCustom(timeStart: number, timeEnd: number, tokenSupply: BigNumber, tokenPrice: number) {
+	async function deployContractCustom(timeStart: number, timeEnd: number, tokenPrice: BigNumber, tokenSupply: number) {
 		const [owner, otherAccount] = await ethers.getSigners()
 
 		const TokenSale = await ethers.getContractFactory("TokenSale")
@@ -75,8 +75,59 @@ describe("TokenSale", function () {
 		})
 	})
 	describe("Buying", function () {
-		it("Sent amount should be above 0", async function () {
-
+		it("Should revert if sale has not started", async function () {
+			const { tokenSale, otherAccount } = await loadFixture(deployContractFixture)
+			await tokenSale.setWhitelisted(otherAccount.address, true)
+			await expect(tokenSale.connect(otherAccount).buyToken({
+				value: ethers.utils.parseEther("0.1")
+			})).to.be.revertedWith("Sale has not started")
+		})
+		it("Should revert if sale has ended", async function () {
+			const { tokenSale, otherAccount, timeEnd } = await loadFixture(deployContractFixture)
+			await tokenSale.setWhitelisted(otherAccount.address, true)
+			time.increaseTo(timeEnd)
+			await expect(tokenSale.connect(otherAccount).buyToken({
+				value: ethers.utils.parseEther("0.1")
+			})).to.be.revertedWith("Sale has ended")
+		})
+		it("Should revert if sent amount is 0 or less", async function () {
+			const { tokenSale, otherAccount, timeStart, timeEnd } = await loadFixture(deployContractFixture)
+			await tokenSale.setWhitelisted(otherAccount.address, true)
+			time.increaseTo((timeStart + timeEnd) / 2)
+			await expect(tokenSale.connect(otherAccount).buyToken({
+				value: ethers.utils.parseEther("0")
+			})).to.be.revertedWith("Sent amount should be above 0")
+		})
+		it("Should keep track of investors", async function () {
+			const { tokenSale, otherAccount, timeStart, timeEnd } = await loadFixture(deployContractFixture)
+			await tokenSale.setWhitelisted(otherAccount.address, true)
+			time.increaseTo((timeStart + timeEnd) / 2)
+			await tokenSale.connect(otherAccount).buyToken({
+				value: ethers.utils.parseEther("0.1")
+			})
+			expect(await tokenSale.investors(0)).to.equal(otherAccount.address)
+		})
+		/* it("Should not duplicate investors", async function () {
+			const { tokenSale, otherAccount, timeStart, timeEnd } = await loadFixture(deployContractFixture)
+			await tokenSale.setWhitelisted(otherAccount.address, true)
+			time.increaseTo((timeStart + timeEnd) / 2)
+			await tokenSale.connect(otherAccount).buyToken({
+				value: ethers.utils.parseEther("0.1")
+			})
+			await tokenSale.connect(otherAccount).buyToken({
+				value: ethers.utils.parseEther("0.1")
+			})
+			expect(await tokenSale.investors(0)).to.equal(otherAccount.address)
+			expect(await tokenSale.investors(1)).to.throw()
+		}) */
+		it("Should keep track of invested ethers", async function () {
+			const { tokenSale, otherAccount, timeStart, timeEnd } = await loadFixture(deployContractFixture)
+			await tokenSale.setWhitelisted(otherAccount.address, true)
+			time.increaseTo((timeStart + timeEnd) / 2)
+			await tokenSale.connect(otherAccount).buyToken({
+				value: ethers.utils.parseEther("0.1")
+			})
+			expect(await tokenSale.ownerToEthers(otherAccount.address)).to.equal(ethers.utils.parseEther("0.1"))
 		})
 	})
 })
