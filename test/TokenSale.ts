@@ -107,19 +107,6 @@ describe("TokenSale", function () {
 			})
 			expect(await tokenSale.investors(0)).to.equal(otherAccount.address)
 		})
-		/* it("Should not duplicate investors", async function () {
-			const { tokenSale, otherAccount, timeStart, timeEnd } = await loadFixture(deployContractFixture)
-			await tokenSale.setWhitelisted(otherAccount.address, true)
-			time.increaseTo((timeStart + timeEnd) / 2)
-			await tokenSale.connect(otherAccount).buyToken({
-				value: ethers.utils.parseEther("0.1")
-			})
-			await tokenSale.connect(otherAccount).buyToken({
-				value: ethers.utils.parseEther("0.1")
-			})
-			expect(await tokenSale.investors(0)).to.equal(otherAccount.address)
-			expect(await tokenSale.investors(1)).to.throw()
-		}) */
 		it("Should keep track of invested ethers", async function () {
 			const { tokenSale, otherAccount, timeStart, timeEnd } = await loadFixture(deployContractFixture)
 			await tokenSale.setWhitelisted(otherAccount.address, true)
