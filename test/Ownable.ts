@@ -1,6 +1,6 @@
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { expect } from "chai";
-import { ethers } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
+import { expect } from "chai"
+import { ethers } from "hardhat"
 
 describe("Ownable", function () {
 	async function deployContractFixture() {
@@ -9,7 +9,7 @@ describe("Ownable", function () {
 		const TestOwnable = await ethers.getContractFactory("TestOwnable")
 		const testOwnable = await TestOwnable.deploy()
 
-		testOwnable.connect(owner);
+		testOwnable.connect(owner)
 
 		return { testOwnable, owner, otherAccount }
 	}

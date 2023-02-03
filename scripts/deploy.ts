@@ -1,8 +1,8 @@
-import { ethers } from "hardhat";
+import { ethers } from "hardhat"
 
 async function main() {
 	const currentTimestampInSeconds = Math.round(Date.now() / 1000)
-	const ONE_MONTH_IN_SECS = 30 * 24 * 60 * 60;
+	const ONE_MONTH_IN_SECS = 30 * 24 * 60 * 60
 	const timeStart = currentTimestampInSeconds + ONE_MONTH_IN_SECS
 	const timeEnd = currentTimestampInSeconds + ONE_MONTH_IN_SECS * 2
 	const tokenPrice = ethers.utils.parseEther("0.1")
@@ -19,6 +19,6 @@ async function main() {
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 main().catch((error) => {
-	console.error(error);
-	process.exitCode = 1;
-});
+	console.error(error)
+	process.exitCode = 1
+})

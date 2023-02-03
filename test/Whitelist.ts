@@ -1,6 +1,6 @@
-import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { expect } from "chai";
-import { ethers } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers"
+import { expect } from "chai"
+import { ethers } from "hardhat"
 
 describe("Whitelist", function () {
 	async function deployContractFixture() {
@@ -9,7 +9,7 @@ describe("Whitelist", function () {
 		const TestWhitelist = await ethers.getContractFactory("TestWhitelist")
 		const testWhitelist = await TestWhitelist.deploy()
 
-		testWhitelist.connect(owner);
+		testWhitelist.connect(owner)
 
 		return { testWhitelist, owner, otherAccount }
 	}

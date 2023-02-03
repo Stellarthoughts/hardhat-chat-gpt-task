@@ -8,6 +8,9 @@ import "./Whitelist.sol";
 /// @title ICO contract
 /// @author Stellarthoughts
 /// @notice In this offering tokens are not transfered outright, but instead distributed after the sale ends
+/// @dev I want this to be in compliance with the ERC20 standard, this was an endeavor to see how i will
+/// 	 do it on my own, including testing the underlying contracts that can be found in OpenZeppelin library
+///      but instead implemented from scratch
 contract TokenSale is Whitelist {
     uint public immutable timeStart;
     uint public immutable timeEnd;
@@ -19,6 +22,7 @@ contract TokenSale is Whitelist {
     uint ethersInvested = 0;
 
     // Not sure about this one, will probably replace with timestamp checking to be consistent
+    // If i am to keep it, might introduce whenSaleEnded modifier to avoid repeats
     bool saleEnded = false;
 
     // Keeps track of investors separatly as i think we're unable to parse mappings
@@ -58,7 +62,7 @@ contract TokenSale is Whitelist {
         tokenPrice = _tokenPrice;
         tokenSupply = _tokenSupply;
 
-        createSupply(owner, _tokenSupply);
+        _createSupply(owner, _tokenSupply);
     }
 
     /// @dev Im not quite sure about these fallback functions, advise if they're incorrect
@@ -77,18 +81,18 @@ contract TokenSale is Whitelist {
     /// @notice Creates supply of tokens of given amount on given address
     /// @param _account Address to which tokens will be assigned
     /// @param _amount Amount of tokens to assign
-    function createSupply(address _account, uint _amount) internal {
+    function _createSupply(address _account, uint _amount) internal {
         ownerToTokens[_account] = _amount;
     }
 
     /// @dev Investor doesn't buy tokens outright, instead they will be
     ///      distributed after the sale ends by the owner
     function buyToken() external payable onlyWhitelisted {
-        require(block.timestamp > timeStart, "Sale has not started");
-        require(block.timestamp < timeEnd, "Sale has ended");
+        require(block.timestamp >= timeStart, "Sale has not started");
+        require(block.timestamp <= timeEnd, "Sale has ended");
         require(msg.value > 0, "Sent amount should be above 0");
         require(
-            (msg.value + ethersInvested) / tokenPrice < tokenSupply,
+            (msg.value + ethersInvested) / tokenPrice <= tokenSupply,
             "The supply was depleted"
         );
         if (ownerToEthers[msg.sender] == 0) {
@@ -101,18 +105,18 @@ contract TokenSale is Whitelist {
     /// @dev Calling this function is expected before distributing and withdrawing ethers by the owner
     /// @notice Manages saleEnded variable.
     function endSale() external onlyOwner {
-        require(block.timestamp > timeEnd, "Sale period is not over yet");
+        require(block.timestamp >= timeEnd, "Sale period is not over yet");
         require(!saleEnded, "The sale is already over");
         saleEnded = true;
         emit SaleEnded();
     }
 
     /// @notice Distributes tokens among investors based on tokenPrice and amount of Ethers invested.
-    /// @dev Probably could do without keeping track of investors ethers at this point, but i still included this.
-    ///      For purposes of showing my steps will include the slither warnings and comment out the version
+    /// @dev	For purposes of showing my steps will include the slither warnings and comment out the version
     /// 		 of the function which triggered it
     /** 
-			TokenSale.distributeTokens() (contracts/TokenSale.sol#110-122) has external calls inside a loop: address/(investor).transfer(amountEthers % tokenPrice) (contracts/TokenSale.sol#117)
+			TokenSale.distributeTokens() (contracts/TokenSale.sol#110-122) has external calls inside a loop: 
+			address/(investor).transfer(amountEthers % tokenPrice) (contracts/TokenSale.sol#117)
 			Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
 	
     		function distributeTokens() external onlyOwner {
@@ -131,35 +135,35 @@ contract TokenSale is Whitelist {
 	**/
     ///  Shifted the responsibility of withdrawing ethers to users of this contract, withdrawEtheres function
     function distributeTokens() external onlyOwner {
-        require(saleEnded);
+        require(saleEnded, "The sale is not over yet");
         for (uint i = 0; i < investors.length; i++) {
             address investor = investors[i];
             uint amountEthers = ownerToEthers[investor];
-            _transferTokens(owner, msg.sender, amountEthers / tokenPrice);
+            _transferTokens(owner, investor, amountEthers / tokenPrice);
             ownerToEthers[investor] = amountEthers % tokenPrice;
         }
         _burnTokens(owner);
-    }
-
-    /// @notice Widthdraws ethers to owner account
-    function withdrawEthersFromContract() external onlyOwner {
-        require(saleEnded);
-        payable(owner).transfer(address(this).balance);
-    }
-
-    /// @notice Widthdraws remaining ethers to investor
-    /// @dev Reentrancy bug spotted here by slither and fixed
-    function withdrawEthers() external {
-        require(saleEnded);
-        require(ownerToEthers[msg.sender] > 0);
-        ownerToEthers[msg.sender] = 0;
-        payable(msg.sender).transfer(ownerToEthers[msg.sender]);
     }
 
     /// @notice Burns the token of given address
     /// @param _account Address which will have tokens burned
     function _burnTokens(address _account) internal {
         ownerToTokens[_account] = 0;
+    }
+
+    /// @notice Widthdraws ethers to owner account
+    function withdrawEthersFromContract() external onlyOwner {
+        require(saleEnded, "The sale is not over yet");
+        payable(owner).transfer(address(this).balance);
+    }
+
+    /// @notice Widthdraws remaining ethers to the investor
+    /// @dev Reentrancy bug spotted here by slither and fixed
+    function withdrawEthers() external {
+        require(saleEnded, "The sale is not over yet");
+        require(ownerToEthers[msg.sender] > 0);
+        ownerToEthers[msg.sender] = 0;
+        payable(msg.sender).transfer(ownerToEthers[msg.sender]);
     }
 
     /// @notice Internal transfer tokens function.
@@ -187,8 +191,8 @@ contract TokenSale is Whitelist {
     /// @param _to Recepient address
     /// @param _amount Amount to send
     function transferTokens(address _from, address _to, uint _amount) external {
+        require(saleEnded, "The sale is not over yet");
         require(_from == msg.sender);
-        require(saleEnded);
         _transferTokens(_from, _to, _amount);
     }
 }
