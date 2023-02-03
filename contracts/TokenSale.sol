@@ -8,8 +8,9 @@ import "./Whitelist.sol";
 /// @title ICO contract
 /// @author Stellarthoughts
 /// @notice In this offering tokens are not transfered outright, but instead distributed after the sale ends
-/// @dev I want this to be in compliance with the ERC20 standard, this was an endeavor to see how i will
-/// 	 do it on my own, including testing the underlying contracts that can be found in OpenZeppelin library
+/// @dev I want this to be in compliance with the ERC20 standard down the road,
+///      as this was an endeavor to see how i will do it on my own,
+///      including testing the underlying contracts that can be found in OpenZeppelin library,
 ///      but instead implemented from scratch
 contract TokenSale is Whitelist {
     uint public immutable timeStart;
