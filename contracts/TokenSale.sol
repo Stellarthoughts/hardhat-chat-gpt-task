@@ -7,7 +7,7 @@ import "./Whitelist.sol";
 
 /// @title ICO contract
 /// @author Stellarthoughts
-/// @notice In this offering tokens are not bought outright, but instead distributed after the sale ends
+/// @notice In this offering tokens are not transfered outright, but instead distributed after the sale ends
 contract TokenSale is Whitelist {
     uint public immutable timeStart;
     uint public immutable timeEnd;
@@ -30,12 +30,12 @@ contract TokenSale is Whitelist {
     event SaleEnded();
     event TokensTransfered(address _from, address _to, uint amount);
 
+    /// @dev Slither warns me about block.timestamp comparisons, but i think it's safe here
+    ///  	 it's also unknown to me yet if block.timestamp vulnerability applies to PoS as opposed to PoW
     /// @param _timeStart The start of the sale (Unix)
     /// @param _timeEnd The end of the sale (Unix)
     /// @param _tokenSupply The number of tokens avaliable to be distributed
     /// @param _tokenPrice The fixed price of the token in gwei
-    // slither warns me about block.timestamp comparisons, but i think it's safe here
-    // it's also unknown to me yet if block.timestamp vulnerability applies to PoS as opposed to PoW
     constructor(
         uint _timeStart,
         uint _timeEnd,
@@ -61,27 +61,28 @@ contract TokenSale is Whitelist {
         createSupply(owner, _tokenSupply);
     }
 
-    // Im not quite sure about these fallback functions, advice if they're incorrect
-    /// Reverts the transaction if not called a proper buyTokens function
+    /// @dev Im not quite sure about these fallback functions, advise if they're incorrect
+    /// @notice Reverts the transaction if not called a proper buyTokens function
     fallback() external payable {
         require(msg.value > 0, "No ether was sent");
         payable(msg.sender).transfer(msg.value);
     }
 
-    /// Reverts the transaction if not called a proper buyTokens function
+    /// @notice Reverts the transaction if not called a proper buyTokens function
     receive() external payable {
         require(msg.value > 0, "No ether was sent");
         payable(msg.sender).transfer(msg.value);
     }
 
-    /// Creates supply of tokens of given amount on given address
+    /// @notice Creates supply of tokens of given amount on given address
     /// @param _account Address to which tokens will be assigned
     /// @param _amount Amount of tokens to assign
     function createSupply(address _account, uint _amount) internal {
         ownerToTokens[_account] = _amount;
     }
 
-    // Investor doesn't buy tokens outright, instead they will be distributed after the sale ends by the owner
+    /// @dev Investor doesn't buy tokens outright, instead they will be
+    ///      distributed after the sale ends by the owner
     function buyToken() external payable onlyWhitelisted {
         require(block.timestamp > timeStart, "Sale has not started");
         require(block.timestamp < timeEnd, "Sale has ended");
@@ -97,8 +98,8 @@ contract TokenSale is Whitelist {
         ethersInvested += msg.value;
     }
 
-    /// Manages saleEnded variable.
-    // Calling this function is expected before distributing and withdrawing ethers by the owner
+    /// @dev Calling this function is expected before distributing and withdrawing ethers by the owner
+    /// @notice Manages saleEnded variable.
     function endSale() external onlyOwner {
         require(block.timestamp > timeEnd, "Sale period is not over yet");
         require(!saleEnded, "The sale is already over");
@@ -106,29 +107,29 @@ contract TokenSale is Whitelist {
         emit SaleEnded();
     }
 
-    /// Distributes tokens among investors based on tokenPrice and amount of Ethers invested.
-    // Returns unused ethers to investor.
-    // Probably could do without keeping track of investors ethers at this point, but i still included this.
-    // for laughs will include the slither warnings and comment out the version
-    // of the function which triggered it
-    /* 
-	TokenSale.distributeTokens() (contracts/TokenSale.sol#110-122) has external calls inside a loop: address(investor).transfer(amountEthers % tokenPrice) (contracts/TokenSale.sol#117)
-	Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
-	*/
+    /// @notice Distributes tokens among investors based on tokenPrice and amount of Ethers invested.
+    /// @dev Probably could do without keeping track of investors ethers at this point, but i still included this.
+    ///      For purposes of showing my steps will include the slither warnings and comment out the version
+    /// 		 of the function which triggered it
+    /** 
+			TokenSale.distributeTokens() (contracts/TokenSale.sol#110-122) has external calls inside a loop: address/(investor).transfer(amountEthers % tokenPrice) (contracts/TokenSale.sol#117)
+			Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+			*/
     /* function distributeTokens() external onlyOwner {
-        require(saleEnded);
-        for (uint i = 0; i < investors.length; i++) {
-            address investor = investors[i];
-            uint amountEthers = ownerToEthers[investor];
-            _transferTokens(owner, msg.sender, amountEthers / tokenPrice);
-            if (amountEthers % tokenPrice != 0) {
-                payable(investor).transfer(amountEthers % tokenPrice);
-            }
-            ownerToEthers[investor] = 0;
-        }
-        _burnTokens(owner);
-    } */
-    // Shifted the responsibility of withdrawing ethers to users of this contract, withdrawEtheres function
+				require(saleEnded);
+				for (uint i = 0; i < investors.length; i++) {
+					address investor = investors[i];
+					uint amountEthers = ownerToEthers[investor];
+					_transferTokens(owner, msg.sender, amountEthers / tokenPrice);
+					if (amountEthers % tokenPrice != 0) {
+						payable(investor).transfer(amountEthers % tokenPrice);
+					}
+					ownerToEthers[investor] = 0;
+				}
+				_burnTokens(owner);
+			} 
+	**/
+    ///  Shifted the responsibility of withdrawing ethers to users of this contract, withdrawEtheres function
     function distributeTokens() external onlyOwner {
         require(saleEnded);
         for (uint i = 0; i < investors.length; i++) {
@@ -140,14 +141,14 @@ contract TokenSale is Whitelist {
         _burnTokens(owner);
     }
 
-    /// Widthdraws ethers to owner account
+    /// @notice Widthdraws ethers to owner account
     function withdrawEthersFromContract() external onlyOwner {
         require(saleEnded);
         payable(owner).transfer(address(this).balance);
     }
 
-    /// Widthdraws remaining ethers to investor
-    // reentrancy bug spotted here by slither and fixed
+    /// @notice Widthdraws remaining ethers to investor
+    /// @dev Reentrancy bug spotted here by slither and fixed
     function withdrawEthers() external {
         require(saleEnded);
         require(ownerToEthers[msg.sender] > 0);
@@ -155,14 +156,14 @@ contract TokenSale is Whitelist {
         payable(msg.sender).transfer(ownerToEthers[msg.sender]);
     }
 
-    /// Burns the token of given address
+    /// @notice Burns the token of given address
     /// @param _account Address which will have tokens burned
     function _burnTokens(address _account) internal {
         ownerToTokens[_account] = 0;
     }
 
-    /// Internal transfer tokens function.
-    /// Doesn't check for sender, but checks for avaliable amount
+    /// @notice Internal transfer tokens function.
+    /// @dev Doesn't check for sender, but checks for avaliable amount
     /// @param _from Sender address
     /// @param _to Recepient address
     /// @param _amount Amount to send
@@ -180,8 +181,8 @@ contract TokenSale is Whitelist {
         emit TokensTransfered(_from, _to, _amount);
     }
 
-    /// External transfer tokens function.
-    /// Checks for sender and calls _transferTokens to do the transfer.
+    /// @notice External transfer tokens function.
+    /// @dev Checks for sender and calls _transferTokens to do the transfer.
     /// @param _from Sender address
     /// @param _to Recepient address
     /// @param _amount Amount to send

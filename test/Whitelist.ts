@@ -13,6 +13,7 @@ describe("Whitelist", function () {
 
 		return { testWhitelist, owner, otherAccount }
 	}
+
 	describe("Whitelisting", function () {
 		it("Should contain whitelisted account and be true after setWhitelisted to true", async function () {
 			const { testWhitelist, otherAccount } = await loadFixture(deployContractFixture)
@@ -20,6 +21,7 @@ describe("Whitelist", function () {
 			expect(await testWhitelist.whitelisted(otherAccount.address)).to.equal(true)
 		})
 	})
+
 	describe("Modifiers", function () {
 		it("Should revert if non-whitelisted calls the function with onlyWhitelisted", async function () {
 			const { testWhitelist, otherAccount } = await loadFixture(deployContractFixture)

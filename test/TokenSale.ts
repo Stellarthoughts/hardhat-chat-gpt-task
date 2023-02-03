@@ -36,6 +36,7 @@ describe("TokenSale", function () {
 
 		return { tokenSale, timeStart, timeEnd, tokenPrice, tokenSupply, owner, otherAccount }
 	}
+
 	describe("Deployment", function () {
 		it("Should revert if timeStart is before or equals current time", async function () {
 			const tokenSale = deployContractCustom(
@@ -46,6 +47,7 @@ describe("TokenSale", function () {
 			)
 			await expect(tokenSale).to.be.revertedWith("Start of the sale must be in the future")
 		})
+
 		it("Should revert if timeEnd is before or equals timeStart", async function () {
 			const tokenSale = deployContractCustom(
 				getTime() + getMonthSeconds(),
@@ -55,6 +57,7 @@ describe("TokenSale", function () {
 			)
 			await expect(tokenSale).to.be.revertedWith("End of the sale must come after the start")
 		})
+
 		it("Should revert if tokenSupply is 0 or less", async function () {
 			const tokenSale = deployContractCustom(
 				getTime() + getMonthSeconds(),
@@ -64,6 +67,7 @@ describe("TokenSale", function () {
 			)
 			await expect(tokenSale).to.be.revertedWith("There must be more than 0 tokens for sale")
 		})
+
 		it("Should revert if tokenPrice is 0 or less", async function () {
 			const tokenSale = deployContractCustom(
 				getTime() + getMonthSeconds(),
@@ -74,6 +78,7 @@ describe("TokenSale", function () {
 			await expect(tokenSale).to.be.revertedWith("Price of the token must be more than 0")
 		})
 	})
+
 	describe("Buying", function () {
 		it("Should revert if sale has not started", async function () {
 			const { tokenSale, otherAccount } = await loadFixture(deployContractFixture)
@@ -82,6 +87,7 @@ describe("TokenSale", function () {
 				value: ethers.utils.parseEther("0.1")
 			})).to.be.revertedWith("Sale has not started")
 		})
+
 		it("Should revert if sale has ended", async function () {
 			const { tokenSale, otherAccount, timeEnd } = await loadFixture(deployContractFixture)
 			await tokenSale.setWhitelisted(otherAccount.address, true)
@@ -90,6 +96,7 @@ describe("TokenSale", function () {
 				value: ethers.utils.parseEther("0.1")
 			})).to.be.revertedWith("Sale has ended")
 		})
+
 		it("Should revert if sent amount is 0 or less", async function () {
 			const { tokenSale, otherAccount, timeStart, timeEnd } = await loadFixture(deployContractFixture)
 			await tokenSale.setWhitelisted(otherAccount.address, true)
@@ -98,6 +105,7 @@ describe("TokenSale", function () {
 				value: ethers.utils.parseEther("0")
 			})).to.be.revertedWith("Sent amount should be above 0")
 		})
+
 		it("Should keep track of investors", async function () {
 			const { tokenSale, otherAccount, timeStart, timeEnd } = await loadFixture(deployContractFixture)
 			await tokenSale.setWhitelisted(otherAccount.address, true)
@@ -107,6 +115,7 @@ describe("TokenSale", function () {
 			})
 			expect(await tokenSale.investors(0)).to.equal(otherAccount.address)
 		})
+
 		it("Should keep track of invested ethers", async function () {
 			const { tokenSale, otherAccount, timeStart, timeEnd } = await loadFixture(deployContractFixture)
 			await tokenSale.setWhitelisted(otherAccount.address, true)
