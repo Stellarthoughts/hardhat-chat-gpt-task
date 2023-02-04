@@ -50,7 +50,7 @@ describe("TokenSale", function () {
 		return { tokenSale, timeStart, timeEnd, tokenPrice, tokenSupply, owner, otherAccount, otherAccount2, otherAccount3 }
 	}
 
-	async function deployContractSaleStartedWhitelistedFixture() {
+	async function deployContractSaleStartedFixture() {
 		const [owner, otherAccount, otherAccount2, otherAccount3] = await ethers.getSigners()
 
 		const { timeStart, timeEnd, tokenPrice, tokenSupply } = await defaultContractSettings()
@@ -151,7 +151,7 @@ describe("TokenSale", function () {
 		})
 
 		it("Should revert if sale has ended", async function () {
-			const { tokenSale, otherAccount, timeEnd } = await loadFixture(deployContractSaleStartedWhitelistedFixture)
+			const { tokenSale, otherAccount, timeEnd } = await loadFixture(deployContractSaleStartedFixture)
 			await time.increaseTo(timeEnd + 1)
 			await expect(tokenSale.connect(otherAccount).buyTokens({
 				value: ethers.utils.parseEther("0.1")
@@ -159,21 +159,21 @@ describe("TokenSale", function () {
 		})
 
 		it("Should revert if sent amount is 0 or less", async function () {
-			const { tokenSale, otherAccount } = await loadFixture(deployContractSaleStartedWhitelistedFixture)
+			const { tokenSale, otherAccount } = await loadFixture(deployContractSaleStartedFixture)
 			await expect(tokenSale.connect(otherAccount).buyTokens({
 				value: ethers.utils.parseEther("0")
 			})).to.be.revertedWith("Sent amount should be above 0")
 		})
 
 		it("Should revert if trying to invest more than allowed by supply and token price", async function () {
-			const { tokenSale, otherAccount, tokenPrice, tokenSupply } = await loadFixture(deployContractSaleStartedWhitelistedFixture)
+			const { tokenSale, otherAccount, tokenPrice, tokenSupply } = await loadFixture(deployContractSaleStartedFixture)
 			await expect(tokenSale.connect(otherAccount).buyTokens({
 				value: tokenPrice.mul(tokenSupply).add(tokenPrice)
 			})).to.be.revertedWith("The supply was depleted")
 		})
 
 		it("Should keep track of investors", async function () {
-			const { tokenSale, otherAccount } = await loadFixture(deployContractSaleStartedWhitelistedFixture)
+			const { tokenSale, otherAccount } = await loadFixture(deployContractSaleStartedFixture)
 			await tokenSale.connect(otherAccount).buyTokens({
 				value: ethers.utils.parseEther("0.1")
 			})
@@ -181,7 +181,7 @@ describe("TokenSale", function () {
 		})
 
 		it("Should keep track of invested ethers", async function () {
-			const { tokenSale, otherAccount } = await loadFixture(deployContractSaleStartedWhitelistedFixture)
+			const { tokenSale, otherAccount } = await loadFixture(deployContractSaleStartedFixture)
 			const ethersAmount = ethers.utils.parseEther("0.1")
 			await tokenSale.connect(otherAccount).buyTokens({
 				value: ethersAmount
@@ -218,7 +218,7 @@ describe("TokenSale", function () {
 		})
 
 		it("Should distribute correctly among 3 investors", async function () {
-			const { tokenSale, otherAccount, otherAccount2, otherAccount3, timeEnd, tokenPrice, tokenSupply } = await loadFixture(deployContractSaleStartedWhitelistedFixture)
+			const { tokenSale, otherAccount, otherAccount2, otherAccount3, timeEnd, tokenPrice, tokenSupply } = await loadFixture(deployContractSaleStartedFixture)
 			const ethersAmount = tokenPrice.mul(tokenSupply).div(3);
 			const expectedTokens = Math.floor(tokenSupply / 3)
 			const buyers = [otherAccount, otherAccount2, otherAccount3]
@@ -256,7 +256,7 @@ describe("TokenSale", function () {
 		})
 
 		it("Should revert if there are no ethers for investor to withdraw", async function () {
-			const { tokenSale, otherAccount, tokenPrice, timeEnd } = await loadFixture(deployContractSaleStartedWhitelistedFixture)
+			const { tokenSale, otherAccount, tokenPrice, timeEnd } = await loadFixture(deployContractSaleStartedFixture)
 			const toPay = tokenPrice.mul(20)
 			await tokenSale.connect(otherAccount).buyTokens({
 				value: toPay
@@ -268,7 +268,7 @@ describe("TokenSale", function () {
 		})
 
 		it("Should return the right amount of ether to owner", async function () {
-			const { tokenSale, owner, otherAccount, tokenPrice, timeEnd, timeStart } = await loadFixture(deployContractSaleStartedWhitelistedFixture)
+			const { tokenSale, owner, otherAccount, tokenPrice, timeEnd, timeStart } = await loadFixture(deployContractSaleStartedFixture)
 			const toPay = tokenPrice.mul(20)
 			await tokenSale.connect(otherAccount).buyTokens({
 				value: toPay
@@ -280,7 +280,7 @@ describe("TokenSale", function () {
 		})
 
 		it("Should return the right amount of ether back to investors", async function () {
-			const { tokenSale, otherAccount, tokenPrice, timeEnd } = await loadFixture(deployContractSaleStartedWhitelistedFixture)
+			const { tokenSale, otherAccount, tokenPrice, timeEnd } = await loadFixture(deployContractSaleStartedFixture)
 			const tokenCount = 21
 			const toPay = tokenPrice.mul(tokenCount)
 			const additionalEthers = ethers.utils.parseEther("0.05");
@@ -297,7 +297,7 @@ describe("TokenSale", function () {
 
 	describe("Transfering", function () {
 		it("Should revert if the sale has not ended", async function () {
-			const { tokenSale, otherAccount, owner } = await loadFixture(deployContractSaleStartedWhitelistedFixture)
+			const { tokenSale, otherAccount, owner } = await loadFixture(deployContractSaleStartedFixture)
 			await expect(tokenSale.connect(otherAccount)
 				.transferTokens(otherAccount.address, owner.address, 1)).to.be.revertedWith("The sale is not over yet")
 		})
