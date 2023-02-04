@@ -155,16 +155,27 @@ contract TokenSale is Whitelist {
     /// @notice Widthdraws ethers to owner account
     function withdrawEthersFromContract() external onlyOwner {
         require(saleEnded, "The sale is not over yet");
-        payable(owner).transfer(address(this).balance);
+        uint blockedForInvestors = 0;
+        for (uint i = 0; i < investors.length; i++) {
+            blockedForInvestors += ownerToEthers[investors[i]];
+        }
+        if (blockedForInvestors < address(this).balance) {
+            uint toTransfer = address(this).balance - blockedForInvestors;
+            payable(owner).transfer(toTransfer);
+        }
     }
 
     /// @notice Widthdraws remaining ethers to the investor
     /// @dev Reentrancy bug spotted here by slither and fixed
     function withdrawEthers() external {
         require(saleEnded, "The sale is not over yet");
-        require(ownerToEthers[msg.sender] > 0);
+        require(
+            ownerToEthers[msg.sender] > 0,
+            "There are no ethers to withdraw"
+        );
+        uint returnEthers = ownerToEthers[msg.sender];
         ownerToEthers[msg.sender] = 0;
-        payable(msg.sender).transfer(ownerToEthers[msg.sender]);
+        payable(msg.sender).transfer(returnEthers);
     }
 
     /// @notice Internal transfer tokens function.

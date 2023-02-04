@@ -132,12 +132,13 @@ describe("TokenSale", function () {
 
 		it("Should keep track of invested ethers", async function () {
 			const { tokenSale, otherAccount, timeStart, timeEnd } = await loadFixture(deployContractFixture)
+			const ethersAmount = ethers.utils.parseEther("0.1")
 			await tokenSale.setWhitelisted(otherAccount.address, true)
 			await time.increaseTo((timeStart + timeEnd) / 2)
 			await tokenSale.connect(otherAccount).buyToken({
-				value: ethers.utils.parseEther("0.1")
+				value: ethersAmount
 			})
-			expect(await tokenSale.ownerToEthers(otherAccount.address)).to.equal(ethers.utils.parseEther("0.1"))
+			expect(await tokenSale.ownerToEthers(otherAccount.address)).to.equal(ethersAmount)
 		})
 	})
 
@@ -170,27 +171,24 @@ describe("TokenSale", function () {
 
 		it("Should distribute correctly among 3 investors", async function () {
 			const { tokenSale, otherAccount, otherAccount2, otherAccount3, timeStart, timeEnd, tokenPrice, tokenSupply } = await loadFixture(deployContractFixture)
+			const ethersAmount = tokenPrice.mul(tokenSupply).div(3);
+			const expectedTokens = Math.floor(tokenSupply / 3)
+			const buyers = [otherAccount, otherAccount2, otherAccount3]
 			await tokenSale.setWhitelisted(otherAccount.address, true)
 			await tokenSale.setWhitelisted(otherAccount2.address, true)
 			await tokenSale.setWhitelisted(otherAccount3.address, true)
 			await time.increaseTo((timeStart + timeEnd) / 2)
-			const ethersAmount = tokenPrice.mul(tokenSupply).div(3);
-			await tokenSale.connect(otherAccount).buyToken({
-				value: ethersAmount
-			})
-			await tokenSale.connect(otherAccount2).buyToken({
-				value: ethersAmount
-			})
-			await tokenSale.connect(otherAccount3).buyToken({
-				value: ethersAmount
+			buyers.forEach(async (buyer) => {
+				await tokenSale.connect(buyer).buyToken({
+					value: ethersAmount
+				})
 			})
 			await time.increaseTo(timeEnd + 1)
 			await tokenSale.endSale()
 			await tokenSale.distributeTokens()
-			const expectedTokens = Math.floor(tokenSupply / 3)
-			expect(await tokenSale.ownerToTokens(otherAccount.address)).to.equal(expectedTokens)
-			expect(await tokenSale.ownerToTokens(otherAccount2.address)).to.equal(expectedTokens)
-			expect(await tokenSale.ownerToTokens(otherAccount3.address)).to.equal(expectedTokens)
+			buyers.forEach(async (buyer) => {
+				expect(await tokenSale.ownerToTokens(buyer.address)).to.equal(expectedTokens)
+			})
 		})
 	})
 
@@ -205,9 +203,56 @@ describe("TokenSale", function () {
 	})
 
 	describe("Withdrawal", function () {
-		it("Should return the right amount of ether to owner")
+		it("Should revert if the sale has not ended", async function () {
+			const { tokenSale } = await loadFixture(deployContractFixture)
+			await expect(tokenSale.withdrawEthersFromContract()).to.be.revertedWith("The sale is not over yet")
+		})
 
-		it("Should return the right amount of ether to investors")
+		it("Should revert if there are no ethers for investor to withdraw", async function () {
+			const { tokenSale, otherAccount, timeStart, tokenPrice, timeEnd } = await loadFixture(deployContractFixture)
+			const toPay = tokenPrice.mul(20)
+			await tokenSale.setWhitelisted(otherAccount.address, true)
+			await time.increaseTo(timeStart)
+			await tokenSale.connect(otherAccount).buyToken({
+				value: toPay
+			})
+			await time.increaseTo(timeEnd + 1)
+			await tokenSale.endSale()
+			await tokenSale.distributeTokens()
+			await expect(tokenSale.connect(otherAccount).withdrawEthers()).to.be.revertedWith("There are no ethers to withdraw")
+		})
+
+		it("Should return the right amount of ether to owner", async function () {
+			const { tokenSale, owner, otherAccount, tokenPrice, timeEnd, timeStart } = await loadFixture(deployContractFixture)
+			const toPay = tokenPrice.mul(20)
+			await tokenSale.setWhitelisted(otherAccount.address, true)
+			await time.increaseTo(timeStart)
+			await tokenSale.connect(otherAccount).buyToken({
+				value: toPay
+			})
+			await time.increaseTo(timeEnd + 1)
+			await tokenSale.endSale()
+			await tokenSale.distributeTokens()
+			await expect(tokenSale.withdrawEthersFromContract()).to.changeEtherBalance(owner, toPay)
+		})
+
+		it("Should return the right amount of ether back to investors", async function () {
+			const { tokenSale, otherAccount, tokenPrice, timeEnd, timeStart } = await loadFixture(deployContractFixture)
+			const tokenCount = 21
+			const toPay = tokenPrice.mul(tokenCount)
+			const additionalEthers = ethers.utils.parseEther("0.05");
+
+			await tokenSale.setWhitelisted(otherAccount.address, true)
+			await time.increaseTo(timeStart)
+			await tokenSale.connect(otherAccount).buyToken({
+				value: toPay.add(additionalEthers)
+			})
+			await time.increaseTo(timeEnd + 1)
+			await tokenSale.endSale()
+			await tokenSale.distributeTokens()
+			await tokenSale.withdrawEthersFromContract()
+			await expect(tokenSale.connect(otherAccount).withdrawEthers()).to.changeEtherBalance(otherAccount, additionalEthers)
+		})
 	})
 
 	describe("Transfering", function () {
