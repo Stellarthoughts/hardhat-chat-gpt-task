@@ -88,7 +88,7 @@ contract TokenSale is Whitelist {
 
     /// @dev Investor doesn't buy tokens outright, instead they will be
     ///      distributed after the sale ends by the owner
-    function buyToken() external payable onlyWhitelisted {
+    function buyTokens() external payable onlyWhitelisted {
         require(block.timestamp >= timeStart, "Sale has not started");
         require(block.timestamp <= timeEnd, "Sale has ended");
         require(msg.value > 0, "Sent amount should be above 0");
@@ -104,6 +104,9 @@ contract TokenSale is Whitelist {
     }
 
     /// @dev Calling this function is expected before distributing and withdrawing ethers by the owner
+    /// 	 I did this because one version of the tasked me, but in the logic of this contract i think
+    ///      it can be merged into distributeTokens function, or calling this function
+    /// 	 will call distributeTokens iternally
     /// @notice Manages saleEnded variable.
     function endSale() external onlyOwner {
         require(block.timestamp >= timeEnd, "Sale period is not over yet");
@@ -204,7 +207,7 @@ contract TokenSale is Whitelist {
     /// @param _amount Amount to send
     function transferTokens(address _from, address _to, uint _amount) external {
         require(saleEnded, "The sale is not over yet");
-        require(_from == msg.sender);
+        require(_from == msg.sender, "You are not the correct sender");
         _transferTokens(_from, _to, _amount);
     }
 }
