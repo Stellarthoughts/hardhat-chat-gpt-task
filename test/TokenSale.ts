@@ -97,7 +97,7 @@ describe("TokenSale", function () {
 	describe("Deployment", function () {
 		it("Should revert if timeStart is before or equals current time", async function () {
 			const tokenSale = deployContractCustom(
-				getTime(),
+				getTime() - 1,
 				getTime() + getMonthSeconds() * 2,
 				ethers.utils.parseEther("0.1"),
 				10000
