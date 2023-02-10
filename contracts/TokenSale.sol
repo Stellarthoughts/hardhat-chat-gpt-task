@@ -2,8 +2,8 @@
 pragma solidity ^0.8.17;
 
 // Uncomment this line to use console.log
-import "hardhat/console.sol";
-import "./Whitelist.sol";
+import 'hardhat/console.sol';
+import './Whitelist.sol';
 
 /// @title ICO contract
 /// @author Stellarthoughts
@@ -41,22 +41,11 @@ contract TokenSale is Whitelist {
 	/// @param _timeEnd The end of the sale (Unix)
 	/// @param _tokenSupply The number of tokens avaliable to be distributed
 	/// @param _tokenPrice The fixed price of the token in gwei
-	constructor(
-		uint _timeStart,
-		uint _timeEnd,
-		uint _tokenSupply,
-		uint _tokenPrice
-	) {
-		require(
-			_timeStart > block.timestamp,
-			"Start of the sale must be in the future"
-		);
-		require(
-			_timeStart < _timeEnd,
-			"End of the sale must come after the start"
-		);
-		require(_tokenSupply > 0, "There must be more than 0 tokens for sale");
-		require(_tokenPrice > 0, "Price of the token must be more than 0");
+	constructor(uint _timeStart, uint _timeEnd, uint _tokenSupply, uint _tokenPrice) {
+		require(_timeStart > block.timestamp, 'Start of the sale must be in the future');
+		require(_timeStart < _timeEnd, 'End of the sale must come after the start');
+		require(_tokenSupply > 0, 'There must be more than 0 tokens for sale');
+		require(_tokenPrice > 0, 'Price of the token must be more than 0');
 
 		timeStart = _timeStart;
 		timeEnd = _timeEnd;
@@ -87,12 +76,12 @@ contract TokenSale is Whitelist {
 	/// @dev Investor doesn't buy tokens outright, instead they will be
 	///      distributed after the sale ends by the owner
 	function buyTokens() public payable onlyWhitelisted {
-		require(block.timestamp >= timeStart, "Sale has not started");
-		require(block.timestamp <= timeEnd, "Sale has ended");
-		require(msg.value > 0, "Sent amount should be above 0");
+		require(block.timestamp >= timeStart, 'Sale has not started');
+		require(block.timestamp <= timeEnd, 'Sale has ended');
+		require(msg.value > 0, 'Sent amount should be above 0');
 		require(
 			(msg.value + ethersInvested) / tokenPrice <= tokenSupply,
-			"The supply was depleted"
+			'The supply was depleted'
 		);
 		if (ownerToEthers[msg.sender] == 0) {
 			investors.push(msg.sender);
@@ -107,8 +96,8 @@ contract TokenSale is Whitelist {
 	/// 	 will call distributeTokens iternally
 	/// @notice Manages saleEnded variable.
 	function endSale() external onlyOwner {
-		require(block.timestamp >= timeEnd, "Sale period is not over yet");
-		require(!saleEnded, "The sale is already over");
+		require(block.timestamp >= timeEnd, 'Sale period is not over yet');
+		require(!saleEnded, 'The sale is already over');
 		saleEnded = true;
 		emit SaleEnded();
 	}
@@ -137,7 +126,7 @@ contract TokenSale is Whitelist {
 	**/
 	///  Shifted the responsibility of withdrawing ethers to users of this contract, withdrawEtheres function
 	function distributeTokens() external onlyOwner {
-		require(saleEnded, "The sale is not over yet");
+		require(saleEnded, 'The sale is not over yet');
 		for (uint i = 0; i < investors.length; i++) {
 			address investor = investors[i];
 			uint amountEthers = ownerToEthers[investor];
@@ -155,30 +144,27 @@ contract TokenSale is Whitelist {
 
 	/// @notice Widthdraws ethers to owner account
 	function withdrawEthersFromContract() external onlyOwner {
-		require(saleEnded, "The sale is not over yet");
+		require(saleEnded, 'The sale is not over yet');
 		uint blockedForInvestors = 0;
 		for (uint i = 0; i < investors.length; i++) {
 			blockedForInvestors += ownerToEthers[investors[i]];
 		}
 		if (blockedForInvestors < address(this).balance) {
 			uint toTransfer = address(this).balance - blockedForInvestors;
-			(bool sent, ) = owner.call{value: toTransfer}("");
-			require(sent, "Failed to send Ether");
+			(bool sent, ) = owner.call{value: toTransfer}('');
+			require(sent, 'Failed to send Ether');
 		}
 	}
 
 	/// @notice Widthdraws remaining ethers to the investor
 	/// @dev Reentrancy bug spotted here by slither and fixed
 	function withdrawEthers() external {
-		require(saleEnded, "The sale is not over yet");
-		require(
-			ownerToEthers[msg.sender] > 0,
-			"There are no ethers to withdraw"
-		);
+		require(saleEnded, 'The sale is not over yet');
+		require(ownerToEthers[msg.sender] > 0, 'There are no ethers to withdraw');
 		uint returnEthers = ownerToEthers[msg.sender];
 		ownerToEthers[msg.sender] = 0;
-		(bool sent, ) = msg.sender.call{value: returnEthers}("");
-		require(sent, "Failed to send Ether");
+		(bool sent, ) = msg.sender.call{value: returnEthers}('');
+		require(sent, 'Failed to send Ether');
 	}
 
 	/// @notice Internal transfer tokens function.
@@ -186,15 +172,8 @@ contract TokenSale is Whitelist {
 	/// @param _from Sender address
 	/// @param _to Recepient address
 	/// @param _amount Amount to send
-	function _transferTokens(
-		address _from,
-		address _to,
-		uint _amount
-	) internal {
-		require(
-			ownerToTokens[_from] >= _amount,
-			"The sender doesn't have enough tokens"
-		);
+	function _transferTokens(address _from, address _to, uint _amount) internal {
+		require(ownerToTokens[_from] >= _amount, "The sender doesn't have enough tokens");
 		ownerToTokens[_from] -= _amount;
 		ownerToTokens[_to] += _amount;
 		emit TokensTransfered(_from, _to, _amount);
@@ -206,8 +185,8 @@ contract TokenSale is Whitelist {
 	/// @param _to Recepient address
 	/// @param _amount Amount to send
 	function transferTokens(address _from, address _to, uint _amount) external {
-		require(saleEnded, "The sale is not over yet");
-		require(_from == msg.sender, "You are not the correct sender");
+		require(saleEnded, 'The sale is not over yet');
+		require(_from == msg.sender, 'You are not the correct sender');
 		_transferTokens(_from, _to, _amount);
 	}
 }
