@@ -164,7 +164,8 @@ contract TokenSale is Whitelist {
         }
         if (blockedForInvestors < address(this).balance) {
             uint toTransfer = address(this).balance - blockedForInvestors;
-            payable(owner).transfer(toTransfer);
+            (bool sent, ) = owner.call{value: toTransfer}("");
+            require(sent, "Failed to send Ether");
         }
     }
 
@@ -178,7 +179,8 @@ contract TokenSale is Whitelist {
         );
         uint returnEthers = ownerToEthers[msg.sender];
         ownerToEthers[msg.sender] = 0;
-        payable(msg.sender).transfer(returnEthers);
+        (bool sent, ) = msg.sender.call{value: returnEthers}("");
+        require(sent, "Failed to send Ether");
     }
 
     /// @notice Internal transfer tokens function.
