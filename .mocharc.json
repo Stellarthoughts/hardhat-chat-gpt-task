@@ -1,13 +1,13 @@
 {
-  "require": "hardhat/register",
-  "diff": true,
-  "extension": ["ts"],
-  "package": "./package.json",
-  "reporter": "spec",
-  "slow": "75",
-  "timeout": "40000",
-  "ui": "bdd",
-  "_": ["test/**/*.ts"],
-  "watch-files": ["test/**/*.ts"],
-  "watch-ignore": ["lib/vendor"]
+	"require": "hardhat/register",
+	"diff": true,
+	"extension": ["ts"],
+	"package": "./package.json",
+	"reporter": "spec",
+	"slow": "75",
+	"timeout": "40000",
+	"ui": "bdd",
+	"_": ["test/**/*.ts"],
+	"watch-files": ["test/**/*.ts"],
+	"watch-ignore": ["lib/vendor"]
 }

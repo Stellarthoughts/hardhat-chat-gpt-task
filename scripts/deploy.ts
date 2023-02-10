@@ -9,12 +9,7 @@ async function main() {
 	const tokenSupply = 100000;
 
 	const TokenSale = await ethers.getContractFactory("TokenSale");
-	const tokenSale = await TokenSale.deploy(
-		timeStart,
-		timeEnd,
-		tokenSupply,
-		tokenPrice
-	);
+	const tokenSale = await TokenSale.deploy(timeStart, timeEnd, tokenSupply, tokenPrice);
 
 	await tokenSale.deployed();
 

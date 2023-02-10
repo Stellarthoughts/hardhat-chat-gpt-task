@@ -2,8 +2,8 @@
 pragma solidity ^0.8.17;
 
 // Uncomment this line to use console.log
-import 'hardhat/console.sol';
-import './Ownable.sol';
+import "hardhat/console.sol";
+import "./Ownable.sol";
 
 contract Whitelist is Ownable {
 	mapping(address => bool) public whitelisted;
@@ -11,7 +11,7 @@ contract Whitelist is Ownable {
 	constructor() Ownable() {}
 
 	modifier onlyWhitelisted() {
-		require(whitelisted[msg.sender], 'You should be whitelisted to call this function');
+		require(whitelisted[msg.sender], "You should be whitelisted to call this function");
 		_;
 	}
 
