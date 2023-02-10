@@ -6,22 +6,22 @@ import "hardhat/console.sol";
 import "./Ownable.sol";
 
 contract Whitelist is Ownable {
-    mapping(address => bool) public whitelisted;
+	mapping(address => bool) public whitelisted;
 
-    constructor() Ownable() {}
+	constructor() Ownable() {}
 
-    modifier onlyWhitelisted() {
-        require(
-            whitelisted[msg.sender],
-            "You should be whitelisted to call this function"
-        );
-        _;
-    }
+	modifier onlyWhitelisted() {
+		require(
+			whitelisted[msg.sender],
+			"You should be whitelisted to call this function"
+		);
+		_;
+	}
 
-    function setWhitelisted(
-        address _account,
-        bool _whitelisted
-    ) external onlyOwner {
-        whitelisted[_account] = _whitelisted;
-    }
+	function setWhitelisted(
+		address _account,
+		bool _whitelisted
+	) external onlyOwner {
+		whitelisted[_account] = _whitelisted;
+	}
 }
