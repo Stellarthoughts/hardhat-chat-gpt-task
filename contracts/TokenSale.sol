@@ -69,14 +69,12 @@ contract TokenSale is Whitelist {
     /// @dev Im not quite sure about these fallback functions, advise if they're incorrect
     /// @notice Reverts the transaction if not called a proper buyTokens function
     fallback() external payable {
-        require(msg.value > 0, "No ether was sent");
-        payable(msg.sender).transfer(msg.value);
+        buyTokens();
     }
 
     /// @notice Reverts the transaction if not called a proper buyTokens function
     receive() external payable {
-        require(msg.value > 0, "No ether was sent");
-        payable(msg.sender).transfer(msg.value);
+        buyTokens();
     }
 
     /// @notice Creates supply of tokens of given amount on given address
@@ -88,7 +86,7 @@ contract TokenSale is Whitelist {
 
     /// @dev Investor doesn't buy tokens outright, instead they will be
     ///      distributed after the sale ends by the owner
-    function buyTokens() external payable onlyWhitelisted {
+    function buyTokens() public payable onlyWhitelisted {
         require(block.timestamp >= timeStart, "Sale has not started");
         require(block.timestamp <= timeEnd, "Sale has ended");
         require(msg.value > 0, "Sent amount should be above 0");
